@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+  # web container settings
+  web:
+    # Refer to ./docker/web/Dockerfile and build
+    build: ./docker/web
+    # Name the container web
+    container_name: web
+    # Environment variable settings (Timezone set to Japan)
+    environment:
+      TZ: "Asia/Tokyo"
+    # Port mapping (host OS port 80 and web container port 80)
+    ports:
+      - "80:80"
+    # File system mapping (host OS ./app and web container /app)
+    # File system mapping (host OS ./docker/web/php.ini and web container /usr/local/etc/php/conf.d/php.ini)
+    volumes:
+      - "./app:/app"
+      - "./docker/web/php.ini:/usr/local/etc/php/conf.d/php.ini"
+    # Start the db container first
+    depends_on:
+      - db
+
+  # db container settings
+  db:
+    # Refer to ./docker/db/Dockerfile and build
+    build: ./docker/db
+    # Name the container db
+    container_name: db
+    # Environment variable setting (mysql root password setting)
+    # Environment variable settings (Timezone set to Japan)
+    environment:
+      MYSQL_ROOT_PASSWORD: "your_root_password"
+      TZ: "Asia/Tokyo"
+    # Port mapping (host OS port 3306 and db container port 3306)
+    ports:
+      - 3306:3306
+    # File system mapping (host OS mysql_data (discussed below) and db container /var/lib/mysql)
+    # File system mapping (host OS ./docker/db/init and db container /docker-entrypoint-initdb.d)
+    # ↑By the way, when the container starts, the sql file in /docker-entrypoint-initdb.d is automatically executed.
+    # File system mapping (host OS ./docker/db/my.cnf and db container /etc/mysql/conf.d/my.cnf)
+    volumes:
+      - "mysql_data:/var/lib/mysql"
+      - "./docker/db/init:/docker-entrypoint-initdb.d"
+      - "./docker/db/my.cnf:/etc/mysql/conf.d/my.cnf"
+    # Automatically restarts when the container goes down
+    restart: always
+
+# Storage settings
+volumes:
+  # Create a storage with the name mysql_data in the host OS
+  mysql_data:
+    driver: local
